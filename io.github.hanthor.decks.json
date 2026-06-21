@@ -25,7 +25,7 @@
                 "build-args": [ "--share=network" ]
             },
             "build-commands": [
-                "pip3 install --prefix=${FLATPAK_DEST} --no-warn-script-location python-pptx odfpy"
+                "pip3 install --prefix=${FLATPAK_DEST} --no-warn-script-location python-pptx odfpy lxml Pillow XlsxWriter"
             ],
             "comment": "Network build for the himachal pipeline; Flathub -> vendored wheels."
         },

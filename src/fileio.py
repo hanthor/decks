@@ -123,11 +123,23 @@ def _read_odp(path):
 
 def _write_odp(path, slides):
     from odf.opendocument import OpenDocumentPresentation
+    from odf.style import Style, MasterPage, PageLayout, PageLayoutProperties
     from odf.draw import Page, Frame, TextBox
     from odf.text import P
     doc = OpenDocumentPresentation()
+
+    layout = PageLayout(name='pl1')
+    layout.addElement(PageLayoutProperties(
+        margin='0cm', pagewidth='25.6cm', pageheight='14.4cm',
+        printorientation='landscape'))
+    doc.automaticstyles.addElement(layout)
+    master = MasterPage(name='Default', pagelayoutname=layout)
+    doc.masterstyles.addElement(master)
+    dpstyle = Style(name='dp1', family='drawing-page')
+    doc.automaticstyles.addElement(dpstyle)
+
     for slide in slides or [_slide([])]:
-        page = Page()
+        page = Page(stylename=dpstyle, masterpagename=master)
         for obj in (slide or {}).get('objects', []):
             if obj.get('type') in ('i-text', 'text', 'textbox'):
                 x = '%dpx' % int(obj.get('left', 0))
