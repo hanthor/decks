@@ -236,28 +236,6 @@ class DecksWindow(SuiteWindow):
                 GLib.timeout_add(800, lambda: (self.present(), False)[1])
             if os.environ.get('DECKS_DECKTEST'):
                 self._run_decktest()
-
-    def _run_decktest(self):
-        base = os.environ['DECKS_DECKTEST']
-        slide = {'version': '5.5.2', 'background': '#ffffff', 'objects': [
-            {'type': 'i-text', 'text': 'HelloDeck', 'left': 100, 'top': 120,
-             'width': 400, 'height': 60, 'fontSize': 32}]}
-        results = []
-        for ext in ('pptx', 'odp'):
-            path = os.path.join(base, 'rt.' + ext)
-            try:
-                fileio.write_deck(path, [slide, slide])
-                back = fileio.read_deck(path)
-                texts = [o.get('text') for s in back for o in s.get('objects', [])
-                         if o.get('type') == 'i-text']
-                ok = ('HelloDeck' in texts) and len(back) == 2
-            except Exception as exc:  # noqa: BLE001
-                ok = False
-                texts = [repr(exc)]
-            print(f'[decks] decktest {ext}: slides={len(back) if ok else "?"} '
-                  f'texts={texts} -> {"OK" if ok else "FAIL"}', flush=True)
-            results.append(ok)
-        print('[decks] decktest result:', 'PASS' if all(results) else 'FAIL', flush=True)
         elif kind == 'slide':
             # Store the just-saved current slide, then dispatch.
             self.slides[self.current] = payload.get('data')
@@ -282,6 +260,28 @@ class DecksWindow(SuiteWindow):
             print('[decks] presenting', payload.get('slides'), 'slides', flush=True)
         elif kind == 'changed':
             pass
+
+    def _run_decktest(self):
+        base = os.environ['DECKS_DECKTEST']
+        slide = {'version': '5.5.2', 'background': '#ffffff', 'objects': [
+            {'type': 'i-text', 'text': 'HelloDeck', 'left': 100, 'top': 120,
+             'width': 400, 'height': 60, 'fontSize': 32}]}
+        results = []
+        for ext in ('pptx', 'odp'):
+            path = os.path.join(base, 'rt.' + ext)
+            try:
+                fileio.write_deck(path, [slide, slide])
+                back = fileio.read_deck(path)
+                texts = [o.get('text') for s in back for o in s.get('objects', [])
+                         if o.get('type') == 'i-text']
+                ok = ('HelloDeck' in texts) and len(back) == 2
+                count = len(back)
+            except Exception as exc:  # noqa: BLE001
+                ok, count, texts = False, '?', [repr(exc)]
+            print(f'[decks] decktest {ext}: slides={count} texts={texts} '
+                  f'-> {"OK" if ok else "FAIL"}', flush=True)
+            results.append(ok)
+        print('[decks] decktest result:', 'PASS' if all(results) else 'FAIL', flush=True)
 
     # ----- self-test --------------------------------------------------------
 
