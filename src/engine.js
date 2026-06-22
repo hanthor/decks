@@ -100,6 +100,16 @@
       present(data);
     } else if (name === 'edit') {
       edit();
+    } else if (name === 'renderAll') {
+      var slides = (data && data.length) ? data : [canvas.toJSON()];
+      var imgs = new Array(slides.length);
+      var pending = slides.length;
+      slides.forEach(function (s, i) {
+        renderSlideToImage(s, function (url) {
+          imgs[i] = url;
+          if (--pending === 0) { post({ type: 'rendered', images: imgs }); }
+        });
+      });
     }
   };
 

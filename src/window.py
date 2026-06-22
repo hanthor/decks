@@ -35,6 +35,7 @@ class DecksWindow(SuiteWindow):
         self._present_pending = False
         self._presenting = False
         self._save_deck_path = None
+        self._export_pending = None
 
         self.webview = SuiteWebView(on_message=self._on_message)
 
@@ -86,6 +87,11 @@ class DecksWindow(SuiteWindow):
         save_btn.set_tooltip_text('Save')
         save_btn.connect('clicked', lambda *_: self.save_deck())
         self.header_bar.pack_start(save_btn)
+
+        export_btn = Gtk.Button(icon_name='document-send-symbolic')
+        export_btn.set_tooltip_text('Export to PDF')
+        export_btn.connect('clicked', lambda *_: self.export_pdf())
+        self.header_bar.pack_start(export_btn)
 
         present_btn = Gtk.Button(icon_name='view-fullscreen-symbolic')
         present_btn.set_tooltip_text('Present')
@@ -207,6 +213,38 @@ class DecksWindow(SuiteWindow):
         self._save_deck_path = gfile.get_path()
         self.webview.send('getSlide', None)   # save current slide first, then write
 
+    def export_pdf(self):
+        dialog = Gtk.FileDialog(title='Export to PDF')
+        dialog.set_initial_name('Untitled.pdf')
+        dialog.save(self, None, self._on_export_pdf)
+
+    def _on_export_pdf(self, dialog, result):
+        try:
+            gfile = dialog.save_finish(result)
+        except GLib.Error:
+            return
+        self._start_export(gfile.get_path())
+
+    def _start_export(self, path):
+        self._export_pending = path
+        self.webview.send('getSlide', None)   # capture current slide, then render all
+
+    def _build_pdf(self, images):
+        import base64
+        from io import BytesIO
+        from PIL import Image
+        path = self._export_pending
+        self._export_pending = None
+        frames = []
+        for url in images:
+            if ',' in url:
+                frames.append(Image.open(BytesIO(base64.b64decode(url.split(',', 1)[1]))).convert('RGB'))
+        if not frames:
+            print('[decks] export: nothing to render', flush=True)
+            return
+        frames[0].save(path, save_all=True, append_images=frames[1:])
+        print('[decks] exported PDF', os.path.basename(path), len(frames), 'pages', flush=True)
+
     def _on_row_selected(self, listbox, row):
         if row is None:
             return
@@ -236,12 +274,17 @@ class DecksWindow(SuiteWindow):
                 GLib.timeout_add(800, lambda: (self.present(), False)[1])
             if os.environ.get('DECKS_DECKTEST'):
                 self._run_decktest()
+            if os.environ.get('DECKS_PDFTEST'):
+                GLib.timeout_add(
+                    900, lambda: (self._start_export(os.environ['DECKS_PDFTEST']), False)[1])
         elif kind == 'slide':
             # Store the just-saved current slide, then dispatch.
             self.slides[self.current] = payload.get('data')
             if self._selftest_target:
                 self._write_selftest(payload.get('data'))
-            if self._save_deck_path:
+            if self._export_pending:
+                self.webview.send('renderAll', self.slides)
+            elif self._save_deck_path:
                 path = self._save_deck_path
                 self._save_deck_path = None
                 try:
@@ -256,6 +299,8 @@ class DecksWindow(SuiteWindow):
                 self.webview.send('present', self.slides)
             else:
                 self._switch_to_pending()
+        elif kind == 'rendered':
+            self._build_pdf(payload.get('images') or [])
         elif kind == 'presenting':
             print('[decks] presenting', payload.get('slides'), 'slides', flush=True)
         elif kind == 'changed':

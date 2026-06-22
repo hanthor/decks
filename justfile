@@ -108,5 +108,21 @@ decktest: build
         echo "DECKTEST: PASS (pptx + odp round-trip text+slides)"; rm -rf "$d"
     else echo "DECKTEST: FAIL"; exit 1; fi
 
+# Headless PDF export test (decks #9): export a deck and assert a valid PDF lands.
+pdftest: build
+    #!/usr/bin/env bash
+    set -uo pipefail
+    flatpak kill {{app_id}} 2>/dev/null || true; sleep 1
+    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+    export WAYLAND_DISPLAY="$(ls "$XDG_RUNTIME_DIR" 2>/dev/null | grep -m1 -E '^wayland-[0-9]+$' || echo wayland-0)"
+    d="$HOME/.cache/decks-pdftest"; rm -rf "$d"; mkdir -p "$d"
+    timeout 10 flatpak run --env=PYTHONUNBUFFERED=1 --filesystem="$d" \
+        --env=DECKS_PDFTEST="$d/out.pdf" {{app_id}} >"$d/log" 2>&1 &
+    pid=$!; sleep 8; flatpak kill {{app_id}} 2>/dev/null; kill "$pid" 2>/dev/null || true
+    echo "--- log ---"; grep -E "export|PDF|error" "$d/log" || tail -3 "$d/log"
+    if [ -f "$d/out.pdf" ] && head -c4 "$d/out.pdf" | grep -q "%PDF"; then
+        echo "PDFTEST: PASS ($(wc -c <"$d/out.pdf") bytes, valid PDF header)"; rm -rf "$d"
+    else echo "PDFTEST: FAIL"; exit 1; fi
+
 clean:
     rm -rf subprojects/suite-common "$HOME/.cache/decks-flatpak"
