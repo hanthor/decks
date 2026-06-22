@@ -30,7 +30,7 @@ setup:
         git clone --depth 1 https://github.com/hanthor/suite-common.git subprojects/suite-common
     fi
 
-build: setup
+build: setup lint
     #!/usr/bin/env bash
     set -euo pipefail
     state="$HOME/.cache/decks-flatpak"
