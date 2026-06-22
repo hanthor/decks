@@ -8,6 +8,7 @@ gtk4 = { version = "0.9", package = "gtk4" }
 libadwaita = "0.7"
 cairo-rs = "0.20"
 ppt-rs = "0.4"
+typst = "0.12"
 
 [[bin]]
 name = "decks"
