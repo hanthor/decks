@@ -326,6 +326,26 @@ class DecksWindow(SuiteWindow):
             print(f'[decks] decktest {ext}: slides={count} texts={texts} '
                   f'-> {"OK" if ok else "FAIL"}', flush=True)
             results.append(ok)
+
+        # Image round-trip (pptx picture <-> Fabric image).
+        img_url = ('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1'
+                   'HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')
+        img_slide = {'version': '5.5.2', 'background': '#ffffff', 'objects': [
+            {'type': 'image', 'src': img_url, 'left': 100, 'top': 100,
+             'width': 200, 'height': 150, 'scaleX': 1, 'scaleY': 1}]}
+        try:
+            p = os.path.join(base, 'img.pptx')
+            fileio.write_deck(p, [img_slide])
+            back = fileio.read_deck(p)
+            has_img = any(o.get('type') == 'image'
+                          for s in back for o in s.get('objects', []))
+        except Exception as exc:  # noqa: BLE001
+            has_img = False
+            print('[decks] decktest image error:', exc, flush=True)
+        print(f'[decks] decktest image: has_image={has_img} -> '
+              f'{"OK" if has_img else "FAIL"}', flush=True)
+        results.append(has_img)
+
         print('[decks] decktest result:', 'PASS' if all(results) else 'FAIL', flush=True)
 
     # ----- self-test --------------------------------------------------------
