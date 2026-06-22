@@ -19,7 +19,7 @@ jobs:
       options: --privileged
     steps:
       - uses: actions/checkout@v4
-      - name: Setup subproject
+      - name: Setup suite-common subproject
         run: |
           mkdir -p subprojects
           git clone --depth 1 https://github.com/hanthor/suite-common.git subprojects/suite-common
@@ -50,31 +50,29 @@ jobs:
         with:
           name: decks-oci
           path: decks.oci
-      - name: Push to GHCR
+      - name: Push OCI to GHCR
         run: |
-          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "${{ secrets.GITHUB_TOKEN }}" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
-          skopeo copy oci:decks.oci docker://ghcr.io/${REPO}:latest
+          skopeo copy oci:decks.oci docker://ghcr.io/tuna-os/decks:latest
+          TAG="${{ github.ref_name }}"
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            skopeo copy oci:decks.oci docker://ghcr.io/${REPO}:${{ github.ref_name }}
+            skopeo copy oci:decks.oci docker://ghcr.io/tuna-os/decks:${TAG}
           fi
-      - name: Generate flatpakrepo
+      - name: Update central index (tuna-os/docs)
         run: |
-          REPO="${{ github.repository }}"
-          OWNER="${REPO%%/*}"
-          NAME="${REPO##*/}"
-          mkdir -p pages
-          cat > pages/decks.flatpakrepo << EOF
-          [Flatpak Repo]
-          Title=TunaOS Flatpaks — Decks
-          Url=oci+https://${OWNER}.github.io/${NAME}
-          Homepage=https://github.com/${REPO}
-          Comment=TunaOS Flatpak repository for Decks
-          Description=Presentations for GNOME
-          EOF
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: pages
-          keep_files: true
+          git clone --depth 1 https://x-access-token:${{ secrets.FLATPAK_INDEX_TOKEN }}@github.com/tuna-os/docs.git index-repo
+          python3 .github/scripts/update-index.py \
+            --oci-dir decks.oci \
+            --index-file index-repo/static/flatpak/index/static \
+            --repo-name tuna-os/decks \
+            --tags latest
+          cd index-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add static/flatpak/index/static
+          if git diff --cached --quiet; then
+            echo "No index changes"
+          else
+            git commit -m "chore(flatpak): update Decks OCI index [${{ github.ref_name }}]"
+            git push origin main
+          fi
