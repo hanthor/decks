@@ -8,6 +8,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
 from gi.repository import Gio, Adw  # noqa: E402
+from suite_common import _
 from suite_common.application import SuiteApplication  # noqa: E402
 from .window import DecksWindow  # noqa: E402
 
