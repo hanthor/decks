@@ -25,9 +25,9 @@
                 "build-args": [ "--share=network" ]
             },
             "build-commands": [
-                "pip3 install --prefix=${FLATPAK_DEST} --no-warn-script-location python-pptx odfpy lxml Pillow XlsxWriter"
+                "pip3 install --prefix=${FLATPAK_DEST} --ignore-installed --no-warn-script-location python-pptx odfpy lxml Pillow XlsxWriter"
             ],
-            "comment": "Network build for the himachal pipeline; Flathub -> vendored wheels."
+            "comment": "--ignore-installed forces lxml into /app: the Sdk ships lxml so pip would otherwise skip it, but the Platform (runtime) lacks it. Network build for the himachal pipeline; Flathub -> vendored wheels."
         },
         {
             "name": "decks",
