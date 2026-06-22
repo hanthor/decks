@@ -89,6 +89,17 @@ class DecksWindow(SuiteWindow):
         tbox.append(self.transition_combo)
         sidebar.append(tbox)
 
+        self.layout_combo = Gtk.DropDown.new_from_strings(
+            ['Blank', 'Title Slide', 'Title + Content', 'Two Column'])
+        self.layout_combo.set_tooltip_text('Slide layout')
+        self.layout_combo.set_selected(0)
+        self.layout_combo.connect('notify::selected', self._on_layout_changed)
+        lbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4,
+                      margin_start=6, margin_end=6, margin_bottom=4)
+        lbox.append(Gtk.Label(label='Layout:', css_classes=['caption']))
+        lbox.append(self.layout_combo)
+        sidebar.append(lbox)
+
         sidebar.set_size_request(200, -1)
 
         split = Adw.OverlaySplitView()
@@ -334,6 +345,13 @@ class DecksWindow(SuiteWindow):
         if 0 <= idx < len(transitions):
             self._slide_transitions = getattr(self, '_slide_transitions', {})
             self._slide_transitions[self.current] = transitions[idx]
+
+    def _on_layout_changed(self, dropdown, _pspec):
+        """Apply a layout template to the current slide."""
+        idx = dropdown.get_selected()
+        layouts = ['blank', 'title', 'content', 'twocol']
+        if 0 <= idx < len(layouts):
+            self.webview.send('applyLayout', layouts[idx])
 
     # ----- bridge -----------------------------------------------------------
 

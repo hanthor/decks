@@ -125,6 +125,20 @@
       post({ type: 'slide', data: canvas.toJSON() });
     } else if (name === 'addText') {
       canvas.add(sampleText()); canvas.renderAll(); post({ type: 'changed' });
+    } else if (name === 'applyLayout') {
+      canvas.clear(); canvas.backgroundColor = '#ffffff';
+      if (data === 'title') {
+        canvas.add(new fabric.IText('Title', { left: 80, top: 80, fontSize: 56, fontFamily: 'sans-serif', fontWeight: 'bold', fill: '#202020' }));
+        canvas.add(new fabric.IText('Subtitle', { left: 80, top: 180, fontSize: 28, fontFamily: 'sans-serif', fill: '#555' }));
+      } else if (data === 'content') {
+        canvas.add(new fabric.IText('Title', { left: 80, top: 40, fontSize: 44, fontFamily: 'sans-serif', fontWeight: 'bold', fill: '#202020' }));
+        canvas.add(new fabric.IText('Content goes here', { left: 80, top: 130, fontSize: 24, fontFamily: 'sans-serif', fill: '#333' }));
+      } else if (data === 'twocol') {
+        canvas.add(new fabric.IText('Left', { left: 40, top: 80, fontSize: 28, fontFamily: 'sans-serif', fill: '#202020' }));
+        canvas.add(new fabric.IText('Right', { left: 500, top: 80, fontSize: 28, fontFamily: 'sans-serif', fill: '#202020' }));
+      }
+      canvas.renderAll(); saveState(); post({ type: 'changed' });
+
     } else if (name === 'addRect') {
       canvas.add(new fabric.Rect({ left: 120, top: 160, width: 220, height: 130,
         fill: '#3584e4', rx: 6, ry: 6 }));
