@@ -140,3 +140,23 @@ guitest: build
 
 clean:
     rm -rf subprojects/suite-common "$HOME/.cache/decks-flatpak"
+
+# Run L1 adapter round-trip tests (pytest, no display).
+l1test:
+    pip install pytest python-pptx odfpy 2>/dev/null
+    pytest tests/unit/ -v
+
+# L3 golden-file E2E (dogtail GUI + oracle verification).
+e2etest: build
+    #!/usr/bin/env bash
+    set -uo pipefail
+    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+    export WAYLAND_DISPLAY="$(ls "$XDG_RUNTIME_DIR" 2>/dev/null | grep -m1 -E '^wayland-[0-9]+$' || echo wayland-0)"
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+    d="$HOME/.cache/decks-e2e"; rm -rf "$d"; mkdir -p "$d"
+    flatpak kill {{app_id}} 2>/dev/null || true; sleep 1
+    setsid flatpak run --filesystem="$d" --env=DECKS_GUITEST="$d" {{app_id}} >/tmp/decks-e2e.log 2>&1 &
+    sleep 8
+    python3 tests/gui/test_decks_e2e.py "$d"; rc=$?
+    flatpak kill {{app_id}} 2>/dev/null || true
+    exit $rc

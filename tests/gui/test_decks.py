@@ -5,28 +5,35 @@
 # Uses AT-SPI actions (no X mouse synthesis) so it runs headlessly on Wayland.
 #   python3 tests/gui/test_decks.py     (`just guitest` handles launch/teardown)
 
+import os
 import sys
 import time
 
+# Resolve suite-common: sibling clone (dev layout) or subproject (Flatpak build).
+for _candidate in (
+    os.path.join(os.path.dirname(__file__), '..', '..', '..', 'suite-common'),
+    os.path.join(os.path.dirname(__file__), '..', '..', 'subprojects', 'suite-common'),
+):
+    if os.path.isdir(_candidate):
+        sys.path.insert(0, _candidate)
+        break
+
 from dogtail import tree  # noqa: E402
-
-
-def click(node):
-    for action in ('click', 'activate', 'press'):
-        try:
-            node.doActionNamed(action)
-            return
-        except Exception:
-            continue
-    raise AssertionError(f'no clickable action on {node}')
+from suite_common.test_helpers import click, count_nodes, find_app, find_widget, dump_tree
 
 
 def main():
-    app = tree.root.application('decks')
+    app = find_app('decks')
     print('found application: decks')
 
     # The tools toolbar (Letters idiom): Add Text Box is the primary tool.
-    add_text = app.child(name='Add Text Box', roleName='push button', showingOnly=False)
+    # Use recursive find_widget because Gtk.Button(icon_name) inside an
+    # AdwToolbarView top-bar Box may not surface via app.child().
+    add_text = find_widget(app, name='Add Text Box', role='push button', showing_only=False)
+    if add_text is None:
+        print('DEBUG: a11y tree (shallow) — searching for Add Text Box...')
+        dump_tree(app, max_depth=3)
+        raise AssertionError('Add Text Box button not found in a11y tree')
     click(add_text)
     time.sleep(0.5)
     print('Add Text Box driven via AT-SPI: OK')
@@ -45,16 +52,7 @@ def main():
     app.child(roleName='list box', showingOnly=False)
     print('slide list (list box) found: OK')
 
-    def count(node):
-        total = 1
-        try:
-            for child in node.children:
-                total += count(child)
-        except Exception:
-            pass
-        return total
-
-    nodes = count(app)
+    nodes = count_nodes(app)
     assert nodes > 15, f'expected a populated a11y tree, got {nodes} nodes'
     print(f'a11y tree populated: {nodes} accessible nodes')
 

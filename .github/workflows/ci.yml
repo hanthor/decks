@@ -1,0 +1,25 @@
+name: CI (Decks)
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  l1-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Checkout suite-common
+        uses: actions/checkout@v4
+        with:
+          repository: hanthor/suite-common
+          path: subprojects/suite-common
+      - name: Install test deps
+        run: pip install pytest python-pptx odfpy
+      - name: Run L1 adapter tests
+        run: |
+          cd decks || cd .
+          pytest tests/unit/ -v

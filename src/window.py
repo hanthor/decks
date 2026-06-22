@@ -27,6 +27,7 @@ class DecksWindow(SuiteWindow):
         super().__init__(app_name='Decks', use_tabs=False, **kwargs)
         self._moduledir = os.path.dirname(__file__)
         self._selftest = os.environ.get('DECKS_SELFTEST')
+        self._guitest = os.environ.get('DECKS_GUITEST')
         print('[decks] selftest =', self._selftest, flush=True)
 
         self.slides = [None]      # list of fabric JSON (None = blank)
@@ -223,6 +224,13 @@ class DecksWindow(SuiteWindow):
         self.webview.send('loadSlide', self.slides[0])
 
     def save_deck(self):
+        # DECKS_GUITEST: save to predetermined path without dialog
+        if self._guitest:
+            path = os.path.join(self._guitest, 'out.pptx')
+            self._save_deck_path = path
+            self.webview.send('getSlide', None)
+            print('[decks] guitest: saving to', path, flush=True)
+            return
         dialog = Gtk.FileDialog(title='Save Presentation')
         dialog.set_initial_name('Untitled.pptx')
         dialog.save(self, None, self._on_save_deck)
@@ -236,6 +244,10 @@ class DecksWindow(SuiteWindow):
         self.webview.send('getSlide', None)   # save current slide first, then write
 
     def export_pdf(self):
+        if self._guitest:
+            path = os.path.join(self._guitest, 'out.pdf')
+            self._start_export(path)
+            return
         dialog = Gtk.FileDialog(title='Export to PDF')
         dialog.set_initial_name('Untitled.pdf')
         dialog.save(self, None, self._on_export_pdf)
@@ -299,6 +311,8 @@ class DecksWindow(SuiteWindow):
             if os.environ.get('DECKS_PDFTEST'):
                 GLib.timeout_add(
                     900, lambda: (self._start_export(os.environ['DECKS_PDFTEST']), False)[1])
+            if self._guitest:
+                GLib.timeout_add(500, self._guitest_setup)
         elif kind == 'slide':
             # Store the just-saved current slide, then dispatch.
             self.slides[self.current] = payload.get('data')
@@ -392,3 +406,22 @@ class DecksWindow(SuiteWindow):
             print('[decks] selftest wrote slide JSON', flush=True)
         except OSError as exc:
             print('[decks] selftest write error:', exc, flush=True)
+
+    # ----- guitest ----------------------------------------------------------
+
+    def _guitest_setup(self):
+        """DECKS_GUITEST=<dir>: load fixture, save/export without dialog."""
+        base = self._guitest
+        fixture = os.path.join(base, 'fixture.pptx')
+        if os.path.exists(fixture):
+            try:
+                self.slides = fileio.read_deck(fixture) or [None]
+                self.current = 0
+                self._refresh_sidebar()
+                self.webview.send('loadSlide', self.slides[0])
+                print('[decks] guitest: loaded fixture', fixture, flush=True)
+            except Exception as exc:
+                print('[decks] guitest: fixture load error:', exc, flush=True)
+        else:
+            print('[decks] guitest: no fixture, using blank deck', flush=True)
+        return False
