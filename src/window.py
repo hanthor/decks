@@ -136,10 +136,27 @@ class DecksWindow(SuiteWindow):
 
     def _on_key(self, controller, keyval, keycode, state):
         from gi.repository import Gdk
-        if keyval == Gdk.KEY_Escape and self._presenting:
+        if not self._presenting:
+            return False
+        if keyval == Gdk.KEY_Escape:
             self._presenting = False
             self.unfullscreen()
             self.webview.send('edit', None)
+            return True
+        if keyval in (Gdk.KEY_b, Gdk.KEY_B):
+            self.webview.send('presentKey', 'blank')
+            return True
+        if keyval in (Gdk.KEY_w, Gdk.KEY_W):
+            self.webview.send('presentKey', 'white')
+            return True
+        if keyval == Gdk.KEY_period:
+            self.webview.send('presentKey', 'black')
+            return True
+        if keyval == Gdk.KEY_Home:
+            self.webview.send('presentKey', 'first')
+            return True
+        if keyval == Gdk.KEY_End:
+            self.webview.send('presentKey', 'last')
             return True
         return False
 
