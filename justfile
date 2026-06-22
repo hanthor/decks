@@ -1,6 +1,6 @@
 # Decks — build & run as a Flatpak using the org.flatpak.Builder flatpak (himachal).
 
-app_id := "io.github.hanthor.decks"
+app_id := "org.tunaos.decks"
 manifest := app_id + ".json"
 
 default:
