@@ -106,10 +106,28 @@ class DecksWindow(SuiteWindow):
         present_btn.connect('clicked', lambda *_: self.present())
         self.header_bar.pack_start(present_btn)
 
-        add_text_btn = Gtk.Button(icon_name='insert-text-symbolic')
-        add_text_btn.set_tooltip_text('Add text box')
-        add_text_btn.connect('clicked', lambda *_: self.webview.send('addText', None))
-        self.header_bar.pack_start(add_text_btn)
+        # Letters idiom: a centered tools toolbar with a responsive extended/more split.
+        def tool(icon, label, message):
+            btn = Gtk.Button(icon_name=icon)
+            btn.set_tooltip_text(label)
+            btn.update_property([Gtk.AccessibleProperty.LABEL], [label])
+            btn.connect('clicked', lambda *_: self.webview.send(message, None))
+            return btn
+
+        group = Gio.SimpleActionGroup()
+        for name, message in (('text', 'addText'), ('shape', 'addRect')):
+            act = Gio.SimpleAction.new(f'add-{name}', None)
+            act.connect('activate', lambda a, p, m=message: self.webview.send(m, None))
+            group.add_action(act)
+        self.insert_action_group('insert', group)
+        more = Gio.Menu()
+        more.append('Add Text Box', 'insert.add-text')
+        more.append('Add Shape', 'insert.add-shape')
+
+        self.add_action_bar(
+            primary=[tool('insert-text-symbolic', 'Add Text Box', 'addText')],
+            extended=[tool('insert-object-symbolic', 'Add Shape', 'addRect')],
+            more_menu=more)
 
         # Escape exits present mode.
         keys = Gtk.EventControllerKey()

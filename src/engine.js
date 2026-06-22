@@ -94,6 +94,10 @@
       post({ type: 'slide', data: canvas.toJSON() });
     } else if (name === 'addText') {
       canvas.add(sampleText()); canvas.renderAll(); post({ type: 'changed' });
+    } else if (name === 'addRect') {
+      canvas.add(new fabric.Rect({ left: 120, top: 160, width: 220, height: 130,
+        fill: '#3584e4', rx: 6, ry: 6 }));
+      canvas.renderAll(); post({ type: 'changed' });
     } else if (name === 'newSlide') {
       canvas.clear(); canvas.backgroundColor = '#ffffff'; canvas.add(sampleText()); canvas.renderAll();
     } else if (name === 'present') {
