@@ -1,5 +1,15 @@
 # Decks
 
+> ⚠️ **DEPRECATED — Superseded by the Rust rewrite.**
+>
+> This Python version is in **bugfix-only maintenance**. New feature development
+> has moved to the [gtk-office-suite](https://github.com/tuna-os/gtk-office-suite)
+> monorepo (`decks` crate). The Rust version is already distributed via Flatpak
+> as `org.tunaos.decks-rust`.
+>
+> See [gtk-office-suite#82](https://github.com/tuna-os/gtk-office-suite/issues/82)
+> for the migration plan.
+
 Presentation application for the [TunaOS](https://github.com/tuna-os) GNOME office suite.
 
 Powered by [Fabric.js](http://fabricjs.com/) for slide editing and [Reveal.js](https://revealjs.com/)
